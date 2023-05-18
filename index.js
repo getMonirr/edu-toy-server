@@ -151,6 +151,30 @@ async function run() {
       res.send(deleteToy);
     });
 
+    // update a toy info by user
+    app.patch("/my-toys/:id", authGuard, async (req, res) => {
+      const userEmail = req.query.email;
+
+      // verify email
+      if (req.decode.email !== userEmail) {
+        return res.status(403).send({
+          error: true,
+          message: "authorization filed email not match",
+        });
+      }
+
+      // update toy
+      const filter = { _id: new ObjectId(req.params.id) };
+      const updateDoc = {
+        $set: {
+          title: req.body.title,
+        },
+      };
+      const result = await toysCollection.updateOne(filter, updateDoc);
+
+      res.send(result);
+    });
+
     // edu toy server routes end
 
     // Send a ping to confirm a successful connection
