@@ -175,6 +175,15 @@ async function run() {
       res.send(result);
     });
 
+    // get all image from toysCollection for gallery
+    app.get("/images", async (req, res) => {
+      const result = await toysCollection
+        .find({}, { projection: { _id: 0, imgUrl: 1 } })
+        .toArray();
+
+      res.send(result);
+    });
+
     // edu toy server routes end
 
     // Send a ping to confirm a successful connection
