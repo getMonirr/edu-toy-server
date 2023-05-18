@@ -30,8 +30,6 @@ const client = new MongoClient(uri, {
 
 // authGuard
 const authGuard = (req, res, next) => {
-  console.log("i am guard");
-
   // check authorization
   const authorization = req.headers.authorization;
   if (!authorization) {
@@ -64,7 +62,7 @@ async function run() {
 
     const toysCollection = client.db("eduToyDB").collection("toys");
 
-    // make jwt token
+    // generate jwt token
     app.post("/jwt", (req, res) => {
       const userInfo = req.body;
       const token = jwt.sign(userInfo, process.env.JWT_SECRET_KEY, {
@@ -97,9 +95,8 @@ async function run() {
       res.send(targetToy);
     });
 
-    // get individual user toy
+    // get  individual user toys
     app.get("/my-toys", authGuard, async (req, res) => {
-      console.log("i am back", req.decode);
       const userEmail = req.query.email;
 
       // verify email
@@ -118,15 +115,40 @@ async function run() {
     });
 
     // get a individual toy by user email
-    app.get("/my-toys/:id", async (req, res) => {
+    app.get("/my-toys/:id", authGuard, async (req, res) => {
       const userEmail = req.query.email;
 
-      console.log(req.params.id, req.query.email);
+      // verify email
+      if (req.decode.email !== userEmail) {
+        return res.status(403).send({
+          error: true,
+          message: "authorization filed email not match",
+        });
+      }
 
-      const query = { _id: new ObjectId(req.params.id) };
+      const query = { _id: new ObjectId(req.params.id), email: userEmail };
       const targetToy = await toysCollection.findOne(query);
 
       res.send(targetToy);
+    });
+
+    // delete a individual toy by user
+    app.delete("/my-toys/:id", authGuard, async (req, res) => {
+      const userEmail = req.query.email;
+
+      // verify email
+      if (req.decode.email !== userEmail) {
+        return res.status(403).send({
+          error: true,
+          message: "authorization filed email not match",
+        });
+      }
+
+      // delete toy
+      const query = { _id: new ObjectId(req.params.id) };
+      const deleteToy = await toysCollection.deleteOne(query);
+
+      res.send(deleteToy);
     });
 
     // edu toy server routes end
