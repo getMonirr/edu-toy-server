@@ -59,6 +59,16 @@ async function run() {
       res.send(targetToy);
     });
 
+    // get individual user toy
+    app.get("/my-toys", async (req, res) => {
+      const userEmail = req.query.email;
+      const userToys = await toysCollection
+        .find({ email: userEmail })
+        .toArray();
+
+      res.send(userToys);
+    });
+
     // edu toy server routes end
 
     // Send a ping to confirm a successful connection
