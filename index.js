@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const jwt = require("jsonwebtoken");
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -27,6 +28,33 @@ const client = new MongoClient(uri, {
   },
 });
 
+// authGuard
+const authGuard = (req, res, next) => {
+  console.log("i am guard");
+
+  // check authorization
+  const authorization = req.headers.authorization;
+  if (!authorization) {
+    return res
+      .status(401)
+      .send({ error: true, message: "authorization failed authorization" });
+  }
+
+  // verify token
+  const token = authorization.split(" ")[1];
+  jwt.verify(token, process.env.JWT_SECRET_KEY, (error, decode) => {
+    if (error) {
+      return res
+        .status(402)
+        .send({ error: true, message: "authorization failed verify token" });
+    }
+
+    // set data to body and got next
+    req.decode = decode;
+    next();
+  });
+};
+
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
@@ -35,6 +63,16 @@ async function run() {
     // edu toy server routes start
 
     const toysCollection = client.db("eduToyDB").collection("toys");
+
+    // make jwt token
+    app.post("/jwt", (req, res) => {
+      const userInfo = req.body;
+      const token = jwt.sign(userInfo, process.env.JWT_SECRET_KEY, {
+        expiresIn: "1h",
+      });
+
+      res.send({ token });
+    });
 
     // add a toy
     app.post("/toys", async (req, res) => {
@@ -60,13 +98,35 @@ async function run() {
     });
 
     // get individual user toy
-    app.get("/my-toys", async (req, res) => {
+    app.get("/my-toys", authGuard, async (req, res) => {
+      console.log("i am back", req.decode);
       const userEmail = req.query.email;
+
+      // verify email
+      if (req.decode.email !== userEmail) {
+        return res.status(403).send({
+          error: true,
+          message: "authorization filed email not match",
+        });
+      }
+
       const userToys = await toysCollection
         .find({ email: userEmail })
         .toArray();
 
       res.send(userToys);
+    });
+
+    // get a individual toy by user email
+    app.get("/my-toys/:id", async (req, res) => {
+      const userEmail = req.query.email;
+
+      console.log(req.params.id, req.query.email);
+
+      const query = { _id: new ObjectId(req.params.id) };
+      const targetToy = await toysCollection.findOne(query);
+
+      res.send(targetToy);
     });
 
     // edu toy server routes end
