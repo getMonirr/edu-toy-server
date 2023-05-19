@@ -62,6 +62,22 @@ async function run() {
 
     const toysCollection = client.db("eduToyDB").collection("toys");
 
+    // search api
+    // create index
+    await toysCollection.createIndex({ name: 1 }, { name: "toysName" });
+
+    // search by toy name
+    app.get("/search", async (req, res) => {
+      const searchText = req.query.name;
+
+      const result = await toysCollection
+        .find({ name: { $regex: searchText, $options: "i" } })
+        .limit(20)
+        .toArray();
+
+      res.send(result);
+    });
+
     // generate jwt token
     app.post("/jwt", (req, res) => {
       const userInfo = req.body;
@@ -82,7 +98,7 @@ async function run() {
 
     // get all toys
     app.get("/toys", async (req, res) => {
-      const toys = await toysCollection.find().toArray();
+      const toys = await toysCollection.find().limit(20).toArray();
 
       res.send(toys);
     });
@@ -179,6 +195,7 @@ async function run() {
     app.get("/images", async (req, res) => {
       const result = await toysCollection
         .find({}, { projection: { _id: 0, imgUrl: 1 } })
+        .limit(8)
         .toArray();
 
       res.send(result);
@@ -200,6 +217,7 @@ async function run() {
             },
           }
         )
+        .limit(8)
         .toArray();
 
       res.send(result);
