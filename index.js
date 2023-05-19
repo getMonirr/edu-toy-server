@@ -184,6 +184,39 @@ async function run() {
       res.send(result);
     });
 
+    // get toy by category
+    app.get("/categories/:category", async (req, res) => {
+      const result = await toysCollection
+        .find(
+          { category: req.params.category },
+          {
+            projection: {
+              _id: 1,
+              imgUrl: 1,
+              category: 1,
+              name: 1,
+              rating: 1,
+              price: 1,
+            },
+          }
+        )
+        .toArray();
+
+      res.send(result);
+    });
+
+    // get all categories
+    app.get("/categories", async (req, res) => {
+      const result = await toysCollection
+        .aggregate([
+          { $group: { _id: "$category" } },
+          { $project: { _id: 0, category: "$_id" } },
+        ])
+        .toArray();
+
+      res.send(result);
+    });
+
     // edu toy server routes end
 
     // Send a ping to confirm a successful connection
