@@ -57,7 +57,7 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
-    client.connect();
+    // client.connect();
 
     // edu toy server routes start
 
@@ -67,6 +67,51 @@ async function run() {
     // create index
     await toysCollection.createIndex({ name: 1 }, { name: "toysName" });
 
+    // get all image from toysCollection for gallery
+    app.get("/images", async (req, res) => {
+      const result = await toysCollection
+        .find({}, { projection: { _id: 0, imgUrl: 1 } })
+        .limit(8)
+        .toArray();
+
+      res.send(result);
+    });
+
+    // get toy by category
+    app.get("/categories/:category", async (req, res) => {
+      const originalCategory = req.params.category.split("-").join(" ");
+      const result = await toysCollection
+        .find(
+          { category: originalCategory },
+          {
+            projection: {
+              _id: 1,
+              imgUrl: 1,
+              category: 1,
+              name: 1,
+              rating: 1,
+              price: 1,
+            },
+          }
+        )
+        .limit(8)
+        .toArray();
+
+      res.send(result);
+    });
+
+    // get all categories
+    app.get("/categories", async (req, res) => {
+      const result = await toysCollection
+        .aggregate([
+          { $group: { _id: "$category" } },
+          { $project: { _id: 0, category: "$_id" } },
+        ])
+        .toArray();
+
+      res.send(result);
+    });
+
     // search by toy name
     app.get("/search", async (req, res) => {
       const searchText = req.query.name;
@@ -75,24 +120,6 @@ async function run() {
         .find({ name: { $regex: searchText, $options: "i" } })
         .limit(20)
         .toArray();
-
-      res.send(result);
-    });
-
-    // generate jwt token
-    app.post("/jwt", (req, res) => {
-      const userInfo = req.body;
-      const token = jwt.sign(userInfo, process.env.JWT_SECRET_KEY, {
-        expiresIn: "1h",
-      });
-
-      res.send({ token });
-    });
-
-    // add a toy
-    app.post("/toys", async (req, res) => {
-      const toy = req.body;
-      const result = await toysCollection.insertOne(toy);
 
       res.send(result);
     });
@@ -171,6 +198,24 @@ async function run() {
       res.send(targetToy);
     });
 
+    // generate jwt token
+    app.post("/jwt", (req, res) => {
+      const userInfo = req.body;
+      const token = jwt.sign(userInfo, process.env.JWT_SECRET_KEY, {
+        expiresIn: "1h",
+      });
+
+      res.send({ token });
+    });
+
+    // add a toy
+    app.post("/toys", async (req, res) => {
+      const toy = req.body;
+      const result = await toysCollection.insertOne(toy);
+
+      res.send(result);
+    });
+
     // delete a individual toy by user
     app.delete("/my-toys/:id", authGuard, async (req, res) => {
       const userEmail = req.query.email;
@@ -212,51 +257,6 @@ async function run() {
         },
       };
       const result = await toysCollection.updateOne(filter, updateDoc);
-
-      res.send(result);
-    });
-
-    // get all image from toysCollection for gallery
-    app.get("/images", async (req, res) => {
-      const result = await toysCollection
-        .find({}, { projection: { _id: 0, imgUrl: 1 } })
-        .limit(8)
-        .toArray();
-
-      res.send(result);
-    });
-
-    // get toy by category
-    app.get("/categories/:category", async (req, res) => {
-      const originalCategory = req.params.category.split("-").join(" ");
-      const result = await toysCollection
-        .find(
-          { category: originalCategory },
-          {
-            projection: {
-              _id: 1,
-              imgUrl: 1,
-              category: 1,
-              name: 1,
-              rating: 1,
-              price: 1,
-            },
-          }
-        )
-        .limit(8)
-        .toArray();
-
-      res.send(result);
-    });
-
-    // get all categories
-    app.get("/categories", async (req, res) => {
-      const result = await toysCollection
-        .aggregate([
-          { $group: { _id: "$category" } },
-          { $project: { _id: 0, category: "$_id" } },
-        ])
-        .toArray();
 
       res.send(result);
     });
