@@ -124,10 +124,32 @@ async function run() {
       }
 
       const userToys = await toysCollection
-        .find({ email: userEmail })
+        .find({ sellerEmail: userEmail })
         .toArray();
 
       res.send(userToys);
+    });
+
+    // get users toys sorting by price
+    app.get("/sort-my-toys", authGuard, async (req, res) => {
+      const userEmail = req.query.email;
+
+      // verify email
+      if (req.decode.email !== userEmail) {
+        return res.status(403).send({
+          error: true,
+          message: "authorization filed email not match",
+        });
+      }
+
+      // sorting
+      const sortBy = req.query.sort;
+      const sortedToys = await toysCollection
+        .find({ sellerEmail: userEmail })
+        .sort({ price: `${sortBy === "low" ? 1 : -1}` })
+        .toArray();
+
+      res.send(sortedToys);
     });
 
     // get a individual toy by user email
@@ -142,7 +164,7 @@ async function run() {
         });
       }
 
-      const query = { _id: new ObjectId(req.params.id), email: userEmail };
+      const query = { _id: new ObjectId(req.params.id) };
       const targetToy = await toysCollection.findOne(query);
 
       res.send(targetToy);
@@ -183,7 +205,9 @@ async function run() {
       const filter = { _id: new ObjectId(req.params.id) };
       const updateDoc = {
         $set: {
-          title: req.body.title,
+          price: req.body.price,
+          quantity: req.body.quantity,
+          detailsDescription: req.body.detailsDescription,
         },
       };
       const result = await toysCollection.updateOne(filter, updateDoc);
