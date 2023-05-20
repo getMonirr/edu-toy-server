@@ -57,6 +57,7 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
+    client.connect();
 
     // edu toy server routes start
 
@@ -227,9 +228,10 @@ async function run() {
 
     // get toy by category
     app.get("/categories/:category", async (req, res) => {
+      const originalCategory = req.params.category.split("-").join(" ");
       const result = await toysCollection
         .find(
-          { category: req.params.category },
+          { category: originalCategory },
           {
             projection: {
               _id: 1,
