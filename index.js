@@ -17,7 +17,7 @@ app.get("/", (req, res) => {
 });
 
 // mongodb setup
-const uri = process.env.DB_CONNECTION_URI;
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster1.d7lse9s.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -65,7 +65,7 @@ async function run() {
 
     // search api
     // create index
-    await toysCollection.createIndex({ name: 1 }, { name: "toysName" });
+    // await toysCollection.createIndex({ name: 1 }, { name: "toysName" });
 
     // get all image from toysCollection for gallery
     app.get("/images", async (req, res) => {
