@@ -62,6 +62,7 @@ async function run() {
     // edu toy server routes start
 
     const toysCollection = client.db("eduToyDB").collection("toys");
+    const feedbackCollection = client.db("eduToyDB").collection("feedbacks");
 
     // search api
     // create index
@@ -196,6 +197,13 @@ async function run() {
       const targetToy = await toysCollection.findOne(query);
 
       res.send(targetToy);
+    });
+
+    // get feedback data
+    app.get("/feedbacks", async (req, res) => {
+      const feedback = await feedbackCollection.find().limit(6).toArray();
+
+      res.send(feedback);
     });
 
     // generate jwt token
